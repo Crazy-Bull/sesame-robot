@@ -1,0 +1,95 @@
+{
+  "frame_delay_ms": 100,
+  "motor_delay_ms": 20,
+  "command_timeout_s": 0.8,
+  "servos": {
+    "R1": {
+      "gpio": 17,
+      "min_pulse_us": 1000,
+      "max_pulse_us": 2000,
+      "min_angle": 0,
+      "max_angle": 180,
+      "offset": 0,
+      "reverse": false,
+      "calibrated": false,
+      "neutral_pulse_us": 1500
+    },
+    "R2": {
+      "gpio": 18,
+      "min_pulse_us": 1000,
+      "max_pulse_us": 2000,
+      "min_angle": 0,
+      "max_angle": 180,
+      "offset": 0,
+      "reverse": false,
+      "calibrated": false,
+      "neutral_pulse_us": 1500
+    },
+    "L1": {
+      "gpio": 27,
+      "min_pulse_us": 1000,
+      "max_pulse_us": 2000,
+      "min_angle": 0,
+      "max_angle": 180,
+      "offset": 0,
+      "reverse": false,
+      "calibrated": false,
+      "neutral_pulse_us": 1500
+    },
+    "L2": {
+      "gpio": 22,
+      "min_pulse_us": 1000,
+      "max_pulse_us": 2000,
+      "min_angle": 0,
+      "max_angle": 180,
+      "offset": 0,
+      "reverse": false,
+      "calibrated": false,
+      "neutral_pulse_us": 1500
+    },
+    "R4": {
+      "gpio": 23,
+      "min_pulse_us": 1000,
+      "max_pulse_us": 2000,
+      "min_angle": 0,
+      "max_angle": 180,
+      "offset": 0,
+      "reverse": false,
+      "calibrated": false,
+      "neutral_pulse_us": 1500
+    },
+    "R3": {
+      "gpio": 24,
+      "min_pulse_us": 1000,
+      "max_pulse_us": 2000,
+      "min_angle": 0,
+      "max_angle": 180,
+      "offset": 0,
+      "reverse": false,
+      "calibrated": false,
+      "neutral_pulse_us": 1500
+    },
+    "L3": {
+      "gpio": 25,
+      "min_pulse_us": 1000,
+      "max_pulse_us": 2000,
+      "min_angle": 0,
+      "max_angle": 180,
+      "offset": 0,
+      "reverse": false,
+      "calibrated": false,
+      "neutral_pulse_us": 1500
+    },
+    "L4": {
+      "gpio": 16,
+      "min_pulse_us": 1000,
+      "max_pulse_us": 2000,
+      "min_angle": 0,
+      "max_angle": 180,
+      "offset": 0,
+      "reverse": false,
+      "calibrated": false,
+      "neutral_pulse_us": 1500
+    }
+  }
+}

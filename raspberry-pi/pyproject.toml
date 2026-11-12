@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sesame-pi"
+version = "0.1.0"
+description = "Direct GPIO Raspberry Pi 4 controller for Sesame Robot"
+requires-python = ">=3.9"
+dependencies = ["Flask>=3.0,<4", "waitress>=3.0,<4", "Pillow>=10,<13"]
+
+[project.optional-dependencies]
+hardware = ["pigpio>=1.78,<2"]
+
+[project.scripts]
+sesame-pi = "sesame_pi.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["sesame_pi*"]
+
+[tool.setuptools.package-data]
+sesame_pi = ["assets/*.json", "templates/*.html"]

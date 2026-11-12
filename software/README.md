@@ -4,6 +4,13 @@ Software applications for making the most of your Sesame Robot.
 
 ## Tools
 
+### [Raspberry Pi 4 Port](../raspberry-pi/README.md)
+
+Run Sesame directly from a Raspberry Pi 4 with `pigpio`, without a PCA9685.
+Includes the original movements and face artwork, browser controls, a JSON API,
+per-servo calibration, and a simulation mode for development without hardware.
+See the port guide for wiring, installation, calibration, and hardware test status.
+
 ### [Sesame Studio](https://github.com/dorianborian/sesame-studio)
 A PySide6-based animation, pose sequencing, and OLED face design tool.
 

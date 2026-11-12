@@ -1,0 +1,18 @@
+# Edit YOUR_PI_USER and all checkout paths before installing.
+# Install sesame-pigpiod.service first (only one pigpiod instance may run).
+[Unit]
+Description=Sesame Raspberry Pi robot controller
+After=network.target sesame-pigpiod.service
+Requires=sesame-pigpiod.service
+
+[Service]
+Type=simple
+User=YOUR_PI_USER
+WorkingDirectory=/home/YOUR_PI_USER/sesame-robot/raspberry-pi
+ExecStart=/home/YOUR_PI_USER/sesame-robot/raspberry-pi/.venv/bin/python -m sesame_pi --config /home/YOUR_PI_USER/sesame-robot/raspberry-pi/config.json --hardware serve --host 0.0.0.0
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sesame · Raspberry Pi</title>
+<style>
+  :root { color-scheme: dark; font-family: system-ui, sans-serif; background:#111a1a; color:#eef6ec }
+  * { box-sizing:border-box } body { max-width:900px; margin:0 auto; padding:28px 20px 60px }
+  header { display:flex; align-items:center; justify-content:space-between; gap:18px }
+  h1 { margin:0; font-size:30px } h2 { font-size:18px; margin-top:0 }
+  p { color:#b8c8bf; line-height:1.5 } .tag { padding:7px 12px; border:1px solid #587565; border-radius:20px }
+  main { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:24px }
+  section { background:#1c2926; border:1px solid #35473d; border-radius:18px; padding:22px }
+  button,select { font:inherit; color:inherit; border:1px solid #5e7567; background:#2c4138; border-radius:10px; padding:13px; cursor:pointer }
+  button:hover { background:#3c5848 } button:active { background:#648a62 } button:disabled { opacity:.45; cursor:default }
+  .dpad { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-width:320px; margin:18px auto }
+  .dpad button { touch-action:none; user-select:none; -webkit-user-select:none }
+  [data-move=forward] { grid-column:2 } [data-move=left] { grid-column:1 }
+  [data-move=backward] { grid-column:2; grid-row:3 }
+  .actions { display:flex; flex-wrap:wrap; gap:8px } .poses { display:grid; grid-template-columns:repeat(3,1fr); gap:8px }
+  .danger { background:#772e2b; border-color:#c97e70 } .danger:hover { background:#98413a }
+  #face { display:block; width:256px; max-width:100%; height:128px; image-rendering:pixelated; margin:12px auto; background:black; border-radius:6px }
+  #message { min-height:24px; color:#ffcf98 } #details { font:13px ui-monospace,monospace; white-space:pre-wrap; color:#b8c8bf }
+  select { width:100%; margin:10px 0 } .wide { grid-column:1/-1 }
+  @media(max-width:620px) { main { grid-template-columns:1fr } .wide { grid-column:auto } header { align-items:flex-start } }
+</style>
+<header><div><h1>Sesame</h1><p>Raspberry Pi 4 · MG90S controller</p></div><span class="tag" id="mode">Connecting…</span></header>
+<div id="message" role="alert"></div>
+<main>
+  <section><h2>Movement</h2><p>Hold a direction to move. Release to stop and hold position.</p>
+    <div class="dpad">
+      <button data-move="forward" aria-label="Forward">↑</button>
+      <button data-move="left" aria-label="Turn left">←</button>
+      <button id="stop">Stop</button>
+      <button data-move="right" aria-label="Turn right">→</button>
+      <button data-move="backward" aria-label="Backward">↓</button>
+    </div>
+    <div class="actions"><button id="arm">Arm</button><button id="disarm">Disarm</button><button class="danger" id="estop">Emergency release</button></div>
+    <p>Emergency release disables servo pulses. Support the robot: its legs may collapse.</p>
+  </section>
+  <section><h2>Expression preview</h2><p>Browser preview only. No physical screen is needed.</p><img id="face" src="/api/face" alt="Current face preview">
+    <label for="faces">Choose a face</label><select id="faces"><option value="">Loading…</option></select>
+    <p id="state">Waiting for robot…</p>
+  </section>
+  <section class="wide"><h2>Poses</h2><div class="poses" id="poses"></div></section>
+  <section class="wide"><h2>Servo targets</h2><p>These are commanded positions; the servos do not report their actual angles.</p><div id="details"></div></section>
+</main>
+<script>
+  let held = false, heartbeat = null, initialized = false, polling = false, movementRequest = 0;
+  const message = document.querySelector('#message');
+  async function post(path, body) {
+    const response = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), signal:AbortSignal.timeout(2000) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  }
+  async function command(name) {
+    message.textContent = '';
+    try { await post('/api/command', {command:name}); }
+    catch(error) { message.textContent = error.message; throw error; }
+  }
+  function clearHold() {
+    held = false; movementRequest++;
+    clearInterval(heartbeat); heartbeat = null;
+  }
+  function stop() {
+    clearHold();
+    command('stop').catch(()=>{});
+  }
+  async function start(direction, button, event) {
+    if (held) return;
+    held = true;
+    const requestId = ++movementRequest;
+    button.setPointerCapture(event.pointerId);
+    try {
+      await command(direction);
+      // If release raced the initial HTTP request, send another stop after
+      // acceptance. A late movement response must never restart a hold.
+      if (!held || requestId !== movementRequest) { await command('stop'); return; }
+      heartbeat = setInterval(async () => {
+        try { await post('/api/heartbeat', {}); }
+        catch(error) { message.textContent=error.message; stop(); }
+      }, 150);
+    } catch(error) { clearHold(); }
+  }
+  document.querySelectorAll('[data-move]').forEach(button => {
+    button.addEventListener('pointerdown', event => { event.preventDefault(); start(button.dataset.move, button, event); });
+    ['pointerup','pointercancel','lostpointercapture'].forEach(type => button.addEventListener(type, () => { if (held) stop(); }));
+  });
+  document.querySelector('#stop').onclick = stop;
+  ['arm','disarm','estop'].forEach(name => document.querySelector('#'+name).onclick = () => { clearHold(); command(name).catch(()=>{}); });
+  window.addEventListener('blur', () => { if (held) stop(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && held) stop(); });
+  window.addEventListener('pagehide', () => {
+    if (held) {
+      clearHold();
+      fetch('/api/command', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({command:'stop'}), keepalive:true}).catch(()=>{});
+    }
+  });
+  document.addEventListener('keydown', event => { if (event.code === 'Space' && event.target.tagName !== 'SELECT') { event.preventDefault(); stop(); } });
+  document.querySelector('#faces').onchange = async event => {
+    try { await post('/api/command', {face:event.target.value}); }
+    catch(error) { message.textContent=error.message; }
+  };
+  async function poll() {
+    if (polling) return; polling=true;
+    try {
+      const response=await fetch('/api/status', {cache:'no-store', signal:AbortSignal.timeout(2000)});
+      if (!response.ok) throw new Error('Status unavailable');
+      const state=await response.json();
+      document.querySelector('#mode').textContent=state.simulation ? 'Simulation' : 'Pi hardware';
+      document.querySelector('#state').textContent=`${state.armed ? 'Armed' : 'Disarmed'} · ${state.currentCommand || state.stopReason} · ${state.currentFace}`;
+      if (state.fault) message.textContent=state.fault;
+      document.querySelectorAll('[data-move],#poses button').forEach(button => button.disabled=!state.armed);
+      if (!initialized) {
+        const faces=document.querySelector('#faces'); faces.replaceChildren();
+        state.faces.forEach(name => faces.add(new Option(name,name)));
+        state.commands.filter(name => !['forward','backward','left','right'].includes(name)).forEach(name => {
+          const button=document.createElement('button'); button.textContent=name; button.disabled=!state.armed;
+          button.onclick=()=>{ clearHold(); command(name).catch(()=>{}); }; document.querySelector('#poses').append(button);
+        });
+        initialized=true;
+      }
+      if (document.activeElement !== document.querySelector('#faces')) document.querySelector('#faces').value=state.currentFace;
+      document.querySelector('#details').textContent=Object.entries(state.servos).map(([name,target]) => target ? `${name.padEnd(3)} ${String(target.physicalAngle).padStart(5)}°  ${target.pulseUs} µs${target.limited ? ' · limited' : ''}` : `${name.padEnd(3)} —`).join('\n');
+      document.querySelector('#face').src='/api/face?t='+Date.now();
+    } catch(error) {
+      document.querySelector('#mode').textContent='Disconnected';
+      message.textContent=error.message;
+      if (held) stop();
+    } finally { polling=false; }
+  }
+  poll(); setInterval(poll,250);
+</script>
+</html>

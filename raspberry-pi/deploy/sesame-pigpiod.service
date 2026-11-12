@@ -1,0 +1,12 @@
+[Unit]
+Description=Local GPIO pulse daemon for Sesame on Raspberry Pi 4
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/pigpiod -g -l -f
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target
