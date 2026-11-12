@@ -28,7 +28,7 @@ class PigpioServos:
         self.pi = pigpio.pi("127.0.0.1", 8888)
         if not self.pi.connected:
             self.pi.stop()
-            raise RuntimeError("Cannot reach local pigpiod. Start it with: sudo pigpiod -l")
+            raise RuntimeError("Cannot reach local pigpiod. Start it with: sudo pigpiod -l -n 127.0.0.1")
         try:
             self.release(self.pins)
         except Exception:

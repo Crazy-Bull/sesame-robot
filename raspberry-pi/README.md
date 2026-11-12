@@ -148,12 +148,32 @@ Do not substitute a Pi 5 GPIO library while keeping this backend unchanged.
 Start exactly one daemon, restricted to local connections:
 
 ```bash
-sudo pigpiod -l
+sudo /usr/local/bin/pigpiod -l -f -n 127.0.0.1
 ```
 
-If a distribution service already runs it, configure that service for local
-connections instead of starting a second instance. The application runs as
-your normal user; it connects to `127.0.0.1:8888`.
+The `-n 127.0.0.1` option is required with this controller: pigpio v79 can bind
+`-l` to IPv6 loopback (`::1`) only, while our client explicitly uses IPv4
+(`127.0.0.1`). The address allowlist forces the upstream daemon to use its IPv4
+socket path while keeping it local-only. See the
+[upstream socket initialization](https://github.com/joan2937/pigpio/blob/v79/pigpio.c).
+
+If a distribution service already runs it, configure that service with the same
+options instead of starting a second instance. The application runs as your
+normal user; it connects to `127.0.0.1:8888`.
+
+If Python reports a connection failure, inspect the running daemon and listener:
+
+```bash
+pgrep -a -x pigpiod
+sudo ss -ltnp 'sport = :8888'
+```
+
+A listener at `[::1]:8888` does not serve our IPv4 client. With the robot
+supported and servo power off, stop the controller and restart its daemon with
+the IPv4 option above. `Can't lock /var/run/pigpio.pid` usually means an existing
+instance is still running; do not remove its PID file to bypass the lock. If you
+installed a daemon service, stop/restart that service instead of running a
+second manual instance.
 
 ## Update or develop directly on the Pi
 
